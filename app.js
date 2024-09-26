@@ -1,7 +1,7 @@
 // Initialize Auth0
 const auth0 = new auth0.WebAuth({
-    domain: 'YOUR_OKTA_DOMAIN', // Okta domain from Auth0 setup
-    clientID: 'YOUR_CLIENT_ID',  // Client ID from Auth0 setup
+    domain: 'dev-njj4l7prjl50p7vh.us.auth0.com', // Okta domain from Auth0 setup
+    clientID: '2U9J082LrHLhQk93AcT0JoWAMdXsLtOw',  // Client ID from Auth0 setup
     redirectUri: window.location.href, // Redirect after login
     responseType: 'token id_token',
     scope: 'openid profile'
