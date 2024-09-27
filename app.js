@@ -2,7 +2,7 @@ import { getFirestore, doc, getDoc, setDoc, updateDoc } from 'https://www.gstati
 
 const db = getFirestore();
 
-// Auth0 configuration
+// Initialize Auth0 Client
 const auth0 = new Auth0Client({
   domain: 'dev-njj4l7prjl50p7vh.us.auth0.com',
   client_id: '2U9J082LrHLhQk93AcT0JoWAMdXsLtOw',
