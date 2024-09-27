@@ -1,80 +1,74 @@
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js';
-import { doc, getDoc, setDoc, updateDoc, getFirestore } from 'https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js';
+import { getFirestore, doc, getDoc, setDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js';
 
-// Initialize Firestore
 const db = getFirestore();
-const auth = getAuth();
 
-document.addEventListener('DOMContentLoaded', () => {
+// Auth0 configuration
+const auth0 = new Auth0Client({
+  domain: 'dev-njj4l7prjl50p7vh.us.auth0.com',
+  client_id: '2U9J082LrHLhQk93AcT0JoWAMdXsLtOw',
+  redirect_uri: window.location.origin
+});
+
+document.addEventListener('DOMContentLoaded', async () => {
   const loginBtn = document.getElementById('login-btn');
   const logoutBtn = document.getElementById('logout-btn');
   const balanceElem = document.getElementById('balance');
   const earnCoinsBtn = document.getElementById('earn-coins-btn');
   const tradeCoinsBtn = document.getElementById('trade-coins-btn');
   
+  let userId = '';
   let userBalance = 0;
 
-  // Firebase Auth State Listener
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      // User is signed in
-      document.getElementById('coin-system').style.display = 'block';
-      loginBtn.style.display = 'none';
-      logoutBtn.style.display = 'block';
+  // Check for existing Auth0 session
+  try {
+    await auth0.handleRedirectCallback();
+  } catch (err) {
+    console.log('Auth0 error:', err);
+  }
 
-      const userId = user.uid;
-      const userDocRef = doc(db, 'users', userId);
-      const userDoc = await getDoc(userDocRef);
+  const isAuthenticated = await auth0.isAuthenticated();
 
-      if (!userDoc.exists()) {
-        // Initialize user balance in Firestore if it doesn't exist
-        await setDoc(userDocRef, { balance: 0 });
-        userBalance = 0;
-      } else {
-        userBalance = userDoc.data().balance;
-      }
+  if (isAuthenticated) {
+    const user = await auth0.getUser();
+    userId = user.sub;
 
-      balanceElem.innerText = userBalance;
+    loginBtn.style.display = 'none';
+    logoutBtn.style.display = 'block';
+    document.getElementById('coin-system').style.display = 'block';
+
+    // Load the user's balance from Firestore
+    const userDocRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userDocRef);
+
+    if (!userDoc.exists()) {
+      // If user doesn't exist in Firestore, create a new document with balance 0
+      await setDoc(userDocRef, { balance: 0 });
+      userBalance = 0;
     } else {
-      // No user is signed in
-      document.getElementById('coin-system').style.display = 'none';
-      loginBtn.style.display = 'block';
-      logoutBtn.style.display = 'none';
+      userBalance = userDoc.data().balance;
     }
+
+    balanceElem.innerText = userBalance;
+  } else {
+    loginBtn.style.display = 'block';
+    logoutBtn.style.display = 'none';
+    document.getElementById('coin-system').style.display = 'none';
+  }
+
+  // Login button click event
+  loginBtn.addEventListener('click', async () => {
+    await auth0.loginWithRedirect();
   });
 
-  // Login function
-  loginBtn.addEventListener('click', () => {
-    const email = prompt("Enter your email:");
-    const password = prompt("Enter your password:");
-
-    signInWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
-        // Successfully logged in
-        console.log('User logged in:', userCredential.user);
-      })
-      .catch((error) => {
-        console.error('Login error:', error);
-      });
-  });
-
-  // Logout function
-  logoutBtn.addEventListener('click', () => {
-    signOut(auth)
-      .then(() => {
-        console.log('User logged out');
-        window.location.reload();
-      })
-      .catch((error) => {
-        console.error('Logout error:', error);
-      });
+  // Logout button click event
+  logoutBtn.addEventListener('click', async () => {
+    await auth0.logout({ returnTo: window.location.origin });
   });
 
   // Earn HexCoins
   earnCoinsBtn.addEventListener('click', async () => {
-    const user = auth.currentUser;
-    if (user) {
-      const userDocRef = doc(db, 'users', user.uid);
+    if (userId) {
+      const userDocRef = doc(db, 'users', userId);
       userBalance += 10;  // Add 10 HexCoins
       await updateDoc(userDocRef, { balance: userBalance });
       balanceElem.innerText = userBalance;
@@ -83,9 +77,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Trade HexCoins
   tradeCoinsBtn.addEventListener('click', async () => {
-    const user = auth.currentUser;
-    if (user && userBalance >= 10) {
-      const userDocRef = doc(db, 'users', user.uid);
+    if (userId && userBalance >= 10) {
+      const userDocRef = doc(db, 'users', userId);
       userBalance -= 10;  // Trade 10 HexCoins
       await updateDoc(userDocRef, { balance: userBalance });
       balanceElem.innerText = userBalance;
