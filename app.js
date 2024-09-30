@@ -67,24 +67,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Earn HexCoins
   earnCoinsBtn.addEventListener('click', async () => {
-    if (userId) {
-      const userDocRef = doc(db, 'users', userId);
-      userBalance += 10;  // Add 10 HexCoins
-      await updateDoc(userDocRef, { balance: userBalance });
-      balanceElem.innerText = userBalance;
+    try {
+      if (userId) {
+        const userDocRef = doc(db, 'users', userId);
+        userBalance += 10;  // Add 10 HexCoins
+        await updateDoc(userDocRef, { balance: userBalance });
+        balanceElem.innerText = userBalance;
+        console.log('Earned 10 HexCoins');
+      } else {
+        console.error('User ID not found');
+      }
+    } catch (error) {
+      console.error('Error earning HexCoins:', error);
     }
   });
 
   // Trade HexCoins
   tradeCoinsBtn.addEventListener('click', async () => {
-    if (userId && userBalance >= 10) {
-      const userDocRef = doc(db, 'users', userId);
-      userBalance -= 10;  // Trade 10 HexCoins
-      await updateDoc(userDocRef, { balance: userBalance });
-      balanceElem.innerText = userBalance;
-      alert('Successfully traded 10 HexCoins!');
-    } else {
-      alert('Not enough HexCoins to trade!');
+    try {
+      if (userId && userBalance >= 10) {
+        const userDocRef = doc(db, 'users', userId);
+        userBalance -= 10;  // Trade 10 HexCoins
+        await updateDoc(userDocRef, { balance: userBalance });
+        balanceElem.innerText = userBalance;
+        alert('Successfully traded 10 HexCoins!');
+      } else {
+        alert('Not enough HexCoins to trade!');
+        console.error('Insufficient balance or user ID not found');
+      }
+    } catch (error) {
+      console.error('Error trading HexCoins:', error);
     }
   });
 });
