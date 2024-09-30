@@ -1,8 +1,21 @@
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js';
 import { getFirestore, doc, getDoc, setDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js';
 
-const db = getFirestore();
+// Firebase configuration (replace with your values)
+const firebaseConfig = {
+  apiKey: "AIzaSyBgUH6d_Ze1hfB5yTgFaVJtv8gMuGfmr90",
+  authDomain: "hexify-f836f.firebaseapp.com",
+  projectId: "hexify-f836f",
+  storageBucket: "hexify-f836f.appspot.com",
+  messagingSenderId: "633259472045",
+  appId: "1:633259472045:web:19769365b151c0283b4224"
+};
 
-// Initialize Auth0 Client
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Initialize Auth0 client
 const auth0 = new Auth0Client({
   domain: 'dev-njj4l7prjl50p7vh.us.auth0.com',
   client_id: '2U9J082LrHLhQk93AcT0JoWAMdXsLtOw',
@@ -15,17 +28,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   const balanceElem = document.getElementById('balance');
   const earnCoinsBtn = document.getElementById('earn-coins-btn');
   const tradeCoinsBtn = document.getElementById('trade-coins-btn');
-  
+
   let userId = '';
   let userBalance = 0;
 
-  // Check for existing Auth0 session
+  // Handle Auth0 authentication callback
   try {
     await auth0.handleRedirectCallback();
   } catch (err) {
-    console.log('Auth0 error:', err);
+    console.error('Error handling Auth0 redirect callback:', err);
   }
 
+  // Check if the user is authenticated
   const isAuthenticated = await auth0.isAuthenticated();
 
   if (isAuthenticated) {
@@ -36,18 +50,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     logoutBtn.style.display = 'block';
     document.getElementById('coin-system').style.display = 'block';
 
-    // Load the user's balance from Firestore
+    // Retrieve the user's balance from Firestore
     const userDocRef = doc(db, 'users', userId);
     const userDoc = await getDoc(userDocRef);
 
     if (!userDoc.exists()) {
-      // If user doesn't exist in Firestore, create a new document with balance 0
+      // If the user doesn't exist, create a new user document with balance 0
       await setDoc(userDocRef, { balance: 0 });
       userBalance = 0;
     } else {
       userBalance = userDoc.data().balance;
     }
 
+    // Display the user's balance
     balanceElem.innerText = userBalance;
   } else {
     loginBtn.style.display = 'block';
@@ -55,24 +70,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('coin-system').style.display = 'none';
   }
 
-  // Login button click event
+  // Login button event
   loginBtn.addEventListener('click', async () => {
     await auth0.loginWithRedirect();
   });
 
-  // Logout button click event
+  // Logout button event
   logoutBtn.addEventListener('click', async () => {
-    await auth0.logout({ returnTo: window.location.origin });
+    await auth0.logout({
+      returnTo: window.location.origin
+    });
   });
 
-  // Earn HexCoins
+  // Earn HexCoins event
   earnCoinsBtn.addEventListener('click', async () => {
     try {
       if (userId) {
         const userDocRef = doc(db, 'users', userId);
         userBalance += 10;  // Add 10 HexCoins
         await updateDoc(userDocRef, { balance: userBalance });
-        balanceElem.innerText = userBalance;
+        balanceElem.innerText = userBalance;  // Update displayed balance
         console.log('Earned 10 HexCoins');
       } else {
         console.error('User ID not found');
@@ -82,14 +99,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Trade HexCoins
+  // Trade HexCoins event
   tradeCoinsBtn.addEventListener('click', async () => {
     try {
       if (userId && userBalance >= 10) {
         const userDocRef = doc(db, 'users', userId);
-        userBalance -= 10;  // Trade 10 HexCoins
+        userBalance -= 10;  // Deduct 10 HexCoins
         await updateDoc(userDocRef, { balance: userBalance });
-        balanceElem.innerText = userBalance;
+        balanceElem.innerText = userBalance;  // Update displayed balance
         alert('Successfully traded 10 HexCoins!');
       } else {
         alert('Not enough HexCoins to trade!');
